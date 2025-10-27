@@ -67,26 +67,109 @@ def build_histogram(latencies, bins=8):
 presets = load_presets()
 
 layout = [
-    [sg.Text('Target URL:'), sg.Input(key='-URL-', size=(70,1)), sg.Text('', key='-URLVAL-')],
-    [sg.Text('Requests/profile'), sg.Input('10', key='-REQS-', size=(6,1)),
-     sg.Text('Threads/profile'), sg.Input('2', key='-THREADS-', size=(6,1)),
-     sg.Text('Timeout(s)'), sg.Input('10', key='-TOUT-', size=(6,1)),
-     sg.Checkbox('Verify TLS', key='-VERIFY-', default=True),
-     sg.Checkbox('Allow redirects', key='-REDIR-', default=True)],
-    [sg.Text('Proxies file'), sg.Input(key='-PROXFILE-', size=(50,1)), sg.FileBrowse()],
-    [sg.Text('Profiles'), sg.Combo(list(presets.keys()), key='-PRESETS-', enable_events=True),
-     sg.Button('Load Preset'), sg.Button('Save Preset'), sg.Button('Add Preset')],
-    [sg.Multiline('\n'.join(presets.get('Default',[])), key='-PROFILES-', size=(100,8))],
-    [sg.Button('Start Test', key='-START-'),
-     sg.Button('Stop', key='-STOP-', disabled=True),
-     sg.Button('Save CSV', key='-SAVE-', disabled=True),
-     sg.Button('Export HTML', key='-HTML-', disabled=True)],
-    [sg.Text('Progress:'), sg.Text('Idle', key='-PROG-'),
-     sg.ProgressBar(100, orientation='h', size=(40,20), key='-PB-')],
-    [sg.Frame('Live Metrics', [[sg.Multiline('', size=(70,10), key='-METRICS-', disabled=True)]),
-              sg.Frame('Latency Histogram', [[sg.Multiline('', size=(40,10), key='-HIST-', disabled=True)]])],
-    [sg.Frame('Request Log (tail 200)', [[sg.Multiline('', size=(120,8), key='-LOG-', disabled=True)]])],
-    [sg.Text('Legal: Use only on property you own or have permission to test.')]
+    [
+        sg.Text('Target URL:'),
+        sg.Input(key='-URL-', size=(70,1)),
+        sg.Text('', key='-URLVAL-')
+    ],
+    [
+        sg.Text('Requests/profile'),
+        sg.Input('10', key='-REQS-', size=(6,1)),
+        sg.Text('Threads/profile'),
+        sg.Input('2', key='-THREADS-', size=(6,1)),
+        sg.Text('Timeout(s)'),
+        sg.Input('10', key='-TOUT-', size=(6,1)),
+        sg.Checkbox('Verify TLS', key='-VERIFY-', default=True),
+        sg.Checkbox('Allow redirects', key='-REDIR-', default=True)
+    ],
+    [
+        sg.Text('Proxies file'),
+        sg.Input(key='-PROXFILE-', size=(50,1)),
+        sg.FileBrowse()
+    ],
+    [
+        sg.Text('Profiles'),
+        sg.Combo(list(presets.keys()), key='-PRESETS-', enable_events=True),
+        sg.Button('Load Preset'),
+        sg.Button('Save Preset'),
+        sg.Button('Add Preset')
+    ],
+    [
+        sg.Multiline(
+            '\n'.join(presets.get('Default', [])),
+            key='-PROFILES-',
+            size=(100,8)
+        )
+    ],
+    [
+        sg.Button('Start Test', key='-START-'),
+        sg.Button('Stop', key='-STOP-', disabled=True),
+        sg.Button('Save CSV', key='-SAVE-', disabled=True),
+        sg.Button('Export HTML', key='-HTML-', disabled=True)
+    ],
+    [
+        sg.Text('Progress:'),
+        sg.Text('Idle', key='-PROG-'),
+        sg.ProgressBar(
+            100,
+            orientation='h',
+            size=(40,20),
+            key='-PB-'
+        )
+    ],
+    # ⬇⬇⬇ AICI era problema mare: acum îl scriem corect
+    [
+        sg.Frame(
+            'Live Metrics',
+            [
+                [
+                    sg.Multiline(
+                        '',
+                        size=(70,10),
+                        key='-METRICS-',
+                        disabled=True
+                    )
+                ]
+            ],
+            expand_x=True,
+            expand_y=True
+        ),
+        sg.Frame(
+            'Latency Histogram',
+            [
+                [
+                    sg.Multiline(
+                        '',
+                        size=(40,10),
+                        key='-HIST-',
+                        disabled=True
+                    )
+                ]
+            ],
+            expand_x=True,
+            expand_y=True
+        )
+    ],
+    [
+        sg.Frame(
+            'Request Log (tail 200)',
+            [
+                [
+                    sg.Multiline(
+                        '',
+                        size=(120,8),
+                        key='-LOG-',
+                        disabled=True
+                    )
+                ]
+            ],
+            expand_x=True,
+            expand_y=True
+        )
+    ],
+    [
+        sg.Text('Legal: Use only on property you own or have permission to test.')
+    ]
 ]
 
 window = sg.Window('Fake Sources Tester Pro', layout, finalize=True, resizable=True)
