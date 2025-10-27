@@ -1,1 +1,58 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Build EXE inside clean venv
+      shell: pwsh
+      run: |
+        echo "=== Create clean virtual environment ==="
+        python -m venv venv
+        & .\venv\Scripts\Activate.ps1
+
+        echo "=== Install dependencies ==="
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller==6.10.0
+
+        echo "=== Create builder.py ==="
+        Remove-Item -ErrorAction Ignore builder.py
+        Add-Content builder.py "import sys, os"
+        Add-Content builder.py "import PySimpleGUI as sg"
+        Add-Content builder.py "import main_gui_pro"
+        Add-Content builder.py ""
+        Add-Content builder.py "if __name__ == '__main__':"
+        Add-Content builder.py "    print('Running builder, PySimpleGUI version:', sg.version)"
+        Add-Content builder.py "    pass"
+
+        echo "=== Run PyInstaller ==="
+        .\venv\Scripts\pyinstaller.exe `
+          --onefile `
+          --windowed `
+          --hidden-import pysimplegui `
+          --collect-all pysimplegui `
+          --add-data "venv\Lib\site-packages\PySimpleGUI;PySimpleGUI" `
+          --name "FakeSourcesTesterPro" `
+          builder.py
+
+    - name: Upload EXE artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: FakeSourcesTesterPro-windows-exe
+        path: dist/FakeSourcesTesterPro.exe
 
