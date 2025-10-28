@@ -1,4 +1,4 @@
-name: Build Windows EXE (onedir safe)
+name: Build Windows EXE (rapid)
 
 on:
   workflow_dispatch:
@@ -8,46 +8,47 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout repo
-    # ia tot codul din branch-ul curent
-      uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Create venv, install deps and build EXE
-      shell: pwsh
-      run: |
-        # 1. Creează un mediu virtual local
-        python -m venv venv
+      - name: Create venv + install deps
+        shell: pwsh
+        run: |
+          # 1. Creează un mediu virtual local
+          python -m venv venv
+          # 2. Activează venv
+          .\venv\Scripts\Activate.ps1
+          # 3. Upgrade pip
+          python -m pip install --upgrade pip
+          # 4. Instalează dependențe din requirements.txt (requests etc)
+          python -m pip install -r requirements.txt
+          # 5. Instalează PySimpleGUI din serverul privat + pyinstaller
+          python -m pip install --extra-index-url https://PySimpleGUI.net/install PySimpleGUI
+          python -m pip install pyinstaller==5.13.0
 
-        # 2. Activează mediul virtual
-        .\venv\Scripts\Activate.ps1
+      - name: Build EXE (onefile, windowed)
+        shell: pwsh
+        run: |
+          .\venv\Scripts\Activate.ps1
+          # CONSTRUIEȘTE ONEFILE DIRECT (mult mai rapid / rezultatul e 1 singur .exe mare)
+          pyinstaller `
+            --noconfirm `
+            --clean `
+            --onefile `
+            --windowed `
+            --name "FakeSourcesTesterPro" `
+            main_gui_pro.py
 
-        # 3. Upgrade pip
-        python -m pip install --upgrade pip
+          # După build onefile, executabilul final e la dist\FakeSourcesTesterPro.exe
+          dir dist
 
-        # 4. Instalează requests (dependență din core.py)
-        python -m pip install requests==2.31.0
-
-        # 5. Instalează PySimpleGUI din indexul privat oficial
-        #    Asta rezolvă eroarea "module 'PySimpleGUI' has no attribute 'theme'"
-        python -m pip install --upgrade --extra-index-url https://PySimpleGUI.net/install PySimpleGUI
-
-        # 6. Instalează PyInstaller (versiunea folosită deja în proiectul tău)
-        python -m pip install pyinstaller==5.13.0
-
-        # 7. Rulează PyInstaller în modul onedir
-        #    --onedir = distribuție tip folder (mai puține probleme la rulare)
-        #    --windowed = fără consolă neagră în spate
-        #    --name = numele exe-ului
-        pyinstaller --noconfirm --onedir --windowed --name "FakeSourcesTesterPro" main_gui_pro.py
-
-    - name: Upload EXE artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: FakeSourcesTesterPro-windows
-        path: dist/FakeSourcesTesterPro
-        if-no-files-found: error
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FakeSourcesTesterPro-windows-exe
+          path: dist/FakeSourcesTesterPro.exe
