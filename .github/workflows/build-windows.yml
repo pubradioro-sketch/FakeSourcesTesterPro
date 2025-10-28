@@ -1,0 +1,51 @@
+name: Build Windows ZIP (onedir safe)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Create venv, install deps and build EXE
+        shell: pwsh
+        run: |
+          # 1. Creează un mediu virtual local
+          python -m venv .\venv
+
+          # 2. Activează venv
+          .\venv\Scripts\Activate.ps1
+
+          # 3. Upgrade pip și instalează dependențele principale
+          python -m pip install --upgrade pip
+
+          # requests vine din PyPI normal
+          python -m pip install requests==2.31.0
+
+          # PySimpleGUI vine din indexul lor privat (v5.x)
+          python -m pip install --extra-index-url https://PySimpleGUI.net/install PySimpleGUI
+
+          # PyInstaller
+          python -m pip install pyinstaller==5.13.0
+
+          # 4. Rulează PyInstaller în modul onedir
+          .\venv\Scripts\pyinstaller.exe --onedir --windowed --collect-all PySimpleGUI --name "FakeSourcesTesterPro" main_gui_pro.py
+
+          # 5. Creează un ZIP din folderul dist\FakeSourcesTesterPro
+          Compress-Archive -Path dist\FakeSourcesTesterPro\* -DestinationPath FakeSourcesTesterPro-windows.zip -Force
+
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FakeSourcesTesterPro-windows-zip
+          path: FakeSourcesTesterPro-windows.zip
+          if-no-files-found: error
