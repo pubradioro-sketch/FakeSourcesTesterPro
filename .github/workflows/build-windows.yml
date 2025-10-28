@@ -1,4 +1,4 @@
-name: Build Windows EXE (rapid)
+name: Build Windows EXE (onedir safe)
 
 on:
   workflow_dispatch:
@@ -8,47 +8,54 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+    - name: Checkout repo
+        # aduce codul din repo în runner
+      uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
 
-      - name: Create venv + install deps
-        shell: pwsh
-        run: |
-          # 1. Creează un mediu virtual local
-          python -m venv venv
-          # 2. Activează venv
-          .\venv\Scripts\Activate.ps1
-          # 3. Upgrade pip
-          python -m pip install --upgrade pip
-          # 4. Instalează dependențe din requirements.txt (requests etc)
-          python -m pip install -r requirements.txt
-          # 5. Instalează PySimpleGUI din serverul privat + pyinstaller
-          python -m pip install --extra-index-url https://PySimpleGUI.net/install PySimpleGUI
-          python -m pip install pyinstaller==5.13.0
+    - name: Create venv, install deps and build EXE
+      shell: pwsh
+      run: |
+        # 1. Creează un mediu virtual local
+        python -m venv venv
 
-      - name: Build EXE (onefile, windowed)
-        shell: pwsh
-        run: |
-          .\venv\Scripts\Activate.ps1
-          # CONSTRUIEȘTE ONEFILE DIRECT (mult mai rapid / rezultatul e 1 singur .exe mare)
-          pyinstaller `
-            --noconfirm `
-            --clean `
-            --onefile `
-            --windowed `
-            --name "FakeSourcesTesterPro" `
-            main_gui_pro.py
+        # 2. Activează venv
+        .\venv\Scripts\Activate.ps1
 
-          # După build onefile, executabilul final e la dist\FakeSourcesTesterPro.exe
-          dir dist
+        # 3. Instalează/upgrade pip
+        python -m pip install --upgrade pip
 
-      - name: Upload EXE artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: FakeSourcesTesterPro-windows-exe
-          path: dist/FakeSourcesTesterPro.exe
+        # 4. Instalează requests exact 2.31.0 (versiune stabilă pentru codul tău)
+        python -m pip install requests==2.31.0
+
+        # 5. Instalează PySimpleGUI din indexul privat
+        python -m pip install --extra-index-url https://PySimpleGUI.net/install PySimpleGUI
+
+        # 6. Instalează PyInstaller (fără UPX, noi nu activăm UPX)
+        python -m pip install pyinstaller==5.13.0
+
+        # 7. Rulează PyInstaller în modul ONEDIR
+        #    -w / --windowed = fără consolă
+        #    --onedir = folder complet cu DLL-uri, python311.dll etc
+        #    --noupx = nu comprimă executabilul (mai puține false positive antivirus)
+        #    --name = numele aplicației
+        .\venv\Scripts\pyinstaller.exe `
+          --onedir `
+          --windowed `
+          --noupx `
+          --name "FakeSourcesTesterPro" `
+          main_gui_pro.py
+
+        # 8. Creează un ZIP din folderul generat de PyInstaller
+        #    Outputul PyInstaller este în dist\FakeSourcesTesterPro\
+        Compress-Archive -Path dist\FakeSourcesTesterPro\* -DestinationPath FakeSourcesTesterPro-windows.zip
+
+    - name: Upload ZIP artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: FakeSourcesTesterPro-windows
+        path: FakeSourcesTesterPro-windows.zip
