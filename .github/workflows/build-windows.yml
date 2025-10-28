@@ -6,7 +6,7 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 20  # 🕒 Limitează execuția la 20 min (evită blocarea)
+    timeout-minutes: 20  # oprește build-ul dacă se blochează aiurea
 
     steps:
       - name: Checkout repo
@@ -34,15 +34,23 @@ jobs:
           python -m pip install pyinstaller==5.13.0
           python -m pip install --extra-index-url https://PySimpleGUI.net/install PySimpleGUI==5.0.10
 
-          # 5️⃣ Curăță orice build vechi
+          # 5️⃣ Curăță build-urile vechi
           if (Test-Path dist) { Remove-Item -Recurse -Force dist }
           if (Test-Path build) { Remove-Item -Recurse -Force build }
 
-          # 6️⃣ Construiește aplicația în mod sigur (onedir)
-          .\venv\Scripts\pyinstaller.exe --onedir --windowed --collect-all PySimpleGUI --name "FakeSourcesTesterPro" main_gui_pro.py
+          # 6️⃣ Construiește aplicația ca folder (onedir)
+          .\venv\Scripts\pyinstaller.exe `
+            --onedir `
+            --windowed `
+            --collect-all PySimpleGUI `
+            --name "FakeSourcesTesterPro" `
+            main_gui_pro.py
 
-          # 7️⃣ Creează arhiva ZIP finală
-          Compress-Archive -Path dist\FakeSourcesTesterPro\* -DestinationPath FakeSourcesTesterPro-windows.zip -Force
+          # 7️⃣ Fă un ZIP cu folderul final (nu .exe direct, ca să nu te mai urle Windows Defender)
+          Compress-Archive `
+            -Path dist\FakeSourcesTesterPro\* `
+            -DestinationPath FakeSourcesTesterPro-windows.zip `
+            -Force
 
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
